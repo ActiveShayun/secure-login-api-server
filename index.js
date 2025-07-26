@@ -14,7 +14,7 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 app.use(express.json())
 app.use(cors({
     origin: [
-        'https://mellifluous-horse-f61419.netlify.app'
+        'https://verdant-basbousa-9161b1.netlify.app'
     ],
     credentials: true
 }))
@@ -61,7 +61,7 @@ async function run() {
         // signup api
         app.post('/signUp', async (req, res) => {
             const { email, password, photo, name } = req.body;
-            console.log(email, password);
+            // console.log(email, password);
             const userExits = await signUpCollection.findOne({ email })
 
             if (userExits) {
@@ -110,6 +110,7 @@ async function run() {
                 httpOnly: true,
                 secure: true,
                 maxAge: 3600000,
+                sameSite: 'None'
             })
                 .status(200).json({
                     success: true,
@@ -136,7 +137,7 @@ async function run() {
             if (!isUser) {
                 res.status(404).json({ message: 'user not found' })
             }
-            console.log();
+            // console.log();
             res.send({
                 userPhoto: isUser.photo,
                 name: isUser.name,
@@ -162,5 +163,5 @@ app.get('/', (req, res) => {
 })
 
 app.listen(port, () => {
-    console.log(`secure api server in running on port${port}`);
+    // console.log(`secure api server in running on port${port}`);
 })
