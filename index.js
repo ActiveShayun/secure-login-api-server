@@ -14,7 +14,8 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 app.use(express.json())
 app.use(cors({
     origin: [
-        'https://verdant-basbousa-9161b1.netlify.app'
+        'https://secure-login-api.vercel.app',
+        'http://localhost:5173',
     ],
     credentials: true
 }))
@@ -53,7 +54,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
 
         const signUpCollection = client.db('login-db').collection('signup')
 
@@ -132,7 +133,7 @@ async function run() {
         // uer profile api
         app.get('/profile', authenticate, async (req, res) => {
             const user = req?.user;
-            console.log('profile', user);
+            // console.log('profile', user);
             const isUser = await signUpCollection.findOne({ email: user.email })
             if (!isUser) {
                 res.status(404).json({ message: 'user not found' })
