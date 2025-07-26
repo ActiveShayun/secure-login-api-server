@@ -13,7 +13,9 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 // middleware
 app.use(express.json())
 app.use(cors({
-    origin: 'http://localhost:5175',
+    origin: [
+        'https://heartfelt-cactus-d658bf.netlify.app',
+    ],
     credentials: true
 }))
 app.use(cookieParser())
@@ -22,14 +24,14 @@ app.use(cookieParser())
 const authenticate = (req, res, next) => {
     const token = req?.cookies?.token;
     if (!token) {
-        return req.status(401).json({ message: 'unauthorized' })
+        return res.status(401).json({ message: 'unauthorized' })
     }
 
     jwt.verify(token, process.env.SECRET_TOKEN, (err, decoded) => {
         if (err) {
-            return req.status(401).json({ message: 'unauthorized' })
+            return res.status(401).json({ message: 'unauthorized' })
         }
-        console.log(' decoded user', decoded);
+        // console.log(' decoded user', decoded);
         req.user = decoded
         next()
     })
@@ -55,20 +57,6 @@ async function run() {
 
         const signUpCollection = client.db('login-db').collection('signup')
 
-        // token set in cookie
-        app.post('/set-cookie', (req, res) => {
-            const user = req.body;
-            const taken = jwt.sign(user, process.env.SECRET_TOKEN, {
-                expiresIn: '1h',
-            })
-
-            res.cookie('token', taken, {
-                httpOnly: true,
-                secure: false,
-                maxAge: 3600000,
-            })
-                .send({ success: true })
-        })
 
         // signup api
         app.post('/signUp', async (req, res) => {
@@ -87,8 +75,19 @@ async function run() {
                 email,
                 password: hashPassword
             })
-            console.log('signUp result', result);
-            res.status(201).json({ message: 'User created successfully' })
+            // console.log('signUp result', result);
+            // generate token optional because user if want to get his/her profile after signup
+            const taken = jwt.sign({ email }, process.env.SECRET_TOKEN, {
+                expiresIn: '1h',
+            })
+            res.cookie('token', taken, {
+                httpOnly: true,
+                secure: true,
+                maxAge: 3600000,
+                sameSite: 'None'
+            })
+
+                .status(201).json({ message: 'User created successfully' })
         })
 
         // login api
@@ -102,16 +101,54 @@ async function run() {
             if (!isValid) {
                 return res.status(401).json({ message: 'invalid password' })
             }
-            res.status(200).json({
-                success: true,
-                message: 'Logged in successfully done'
+            // generate token 
+            const taken = jwt.sign({ email }, process.env.SECRET_TOKEN, {
+                expiresIn: '1h',
+            })
+
+            res.cookie('token', taken, {
+                httpOnly: true,
+                secure: true,
+                maxAge: 3600000,
+            })
+                .status(200).json({
+                    success: true,
+                    message: 'Logged in successfully done'
+                })
+        })
+
+        // logout with clear cookie api
+        app.post('/logout', (req, res) => {
+            res.clearCookie('token', {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'None',
+            })
+            res.status(200).json({ message: 'Logout successful' })
+        })
+
+
+        // uer profile api
+        app.get('/profile', authenticate, async (req, res) => {
+            const user = req?.user;
+            console.log('profile', user);
+            const isUser = await signUpCollection.findOne({ email: user.email })
+            if (!isUser) {
+                res.status(404).json({ message: 'user not found' })
+            }
+            console.log();
+            res.send({
+                userPhoto: isUser.photo,
+                name: isUser.name,
+                email: isUser.email
             })
         })
 
 
+
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
