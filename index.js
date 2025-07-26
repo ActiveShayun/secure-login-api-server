@@ -14,7 +14,7 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 app.use(express.json())
 app.use(cors({
     origin: [
-        'http://localhost:5173',
+        'https://mellifluous-horse-f61419.netlify.app'
     ],
     credentials: true
 }))
